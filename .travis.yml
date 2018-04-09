@@ -2,6 +2,8 @@ language: c
 sudo: required
 addons:
     apt:
+        config:
+            retries: true
         sources:
             - ubuntu-toolchain-r-test
             - llvm-toolchain-precise-3.9
@@ -83,7 +85,7 @@ matrix:
           env: T=cmake
         - os: linux
           compiler: gcc
-          dist: precise
+          dist: trusty
           env: T=coverage
         - os: linux
           compiler: gcc
@@ -187,7 +189,7 @@ script:
         if [ "$T" = "cmake" ]; then
              mkdir build
              cd build
-             cmake ..
+             cmake .. -DCURL_WERROR=ON
              make
         fi
     - |

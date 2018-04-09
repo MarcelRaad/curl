@@ -1195,12 +1195,14 @@ static OSStatus CopyIdentityFromPKCS12File(const char *cPath,
           *out_cert_and_key = (SecIdentityRef) identity;
           break;
         }
+#if CURL_BUILD_MAC_10_7
         else if(itemID == SecCertificateGetTypeID()) {
           status = SecIdentityCreateWithCertificate(NULL,
                                                  (SecCertificateRef) item,
                                                  out_cert_and_key);
           break;
         }
+#endif
       }
     }
 
@@ -1389,7 +1391,7 @@ static CURLcode darwinssl_connect_step1(struct connectdata *conn,
 #endif /* CURL_BUILD_MAC */
 
 #if CURL_BUILD_MAC_10_8 || CURL_BUILD_IOS
-  if(SSLCreateContext != NULL) {  /* use the newer API if avaialble */
+  if(SSLCreateContext != NULL) {  /* use the newer API if available */
     if(BACKEND->ssl_ctx)
       CFRelease(BACKEND->ssl_ctx);
     BACKEND->ssl_ctx = SSLCreateContext(NULL, kSSLClientSide, kSSLStreamType);
@@ -2892,13 +2894,14 @@ static CURLcode Curl_darwinssl_md5sum(unsigned char *tmp, /* input */
   return CURLE_OK;
 }
 
-static void Curl_darwinssl_sha256sum(const unsigned char *tmp, /* input */
+static CURLcode Curl_darwinssl_sha256sum(const unsigned char *tmp, /* input */
                                      size_t tmplen,
                                      unsigned char *sha256sum, /* output */
                                      size_t sha256len)
 {
   assert(sha256len >= CURL_SHA256_DIGEST_LENGTH);
   (void)CC_SHA256(tmp, (CC_LONG)tmplen, sha256sum);
+  return CURLE_OK;
 }
 
 static bool Curl_darwinssl_false_start(void)

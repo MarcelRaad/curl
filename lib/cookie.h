@@ -45,9 +45,11 @@ struct Cookie {
   bool httponly;     /* true if the httponly directive is present */
 };
 
+#define COOKIE_HASH_SIZE 256
+
 struct CookieInfo {
   /* linked list of cookies we know of */
-  struct Cookie *cookies;
+  struct Cookie *cookies[COOKIE_HASH_SIZE];
 
   char *filename;  /* file we read from/write to */
   bool running;    /* state info, for cookie adding information */
@@ -80,7 +82,8 @@ struct Curl_easy;
  */
 
 struct Cookie *Curl_cookie_add(struct Curl_easy *data,
-                               struct CookieInfo *, bool header, char *lineptr,
+                               struct CookieInfo *, bool header, bool noexpiry,
+                               char *lineptr,
                                const char *domain, const char *path);
 
 struct Cookie *Curl_cookie_getlist(struct CookieInfo *, const char *,
