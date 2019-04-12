@@ -2181,20 +2181,22 @@ ParameterError parse_args(struct GlobalConfig *config, int argc,
   struct OperationConfig *operation = config->first;
 
   for(i = 1, stillflags = TRUE; i < argc && !result; i++) {
-    orig_opt = argv[i];
+    orig_opt = curlx_convert_tchar_to_UTF8(argv[i]);
 
-    if(stillflags && ('-' == argv[i][0])) {
+    if(stillflags && ('-' == orig_opt[0])) {
       bool passarg;
-      char *flag = argv[i];
 
-      if(!strcmp("--", argv[i]))
+      if(!strcmp("--", orig_opt))
         /* This indicates the end of the flags and thus enables the
            following (URL) argument to start with -. */
         stillflags = FALSE;
       else {
-        char *nextarg = (i < (argc - 1)) ? argv[i + 1] : NULL;
+        char *nextarg = (i < (argc - 1))
+          ? curlx_convert_tchar_to_UTF8(argv[i + 1])
+          : NULL;
 
-        result = getparameter(flag, nextarg, &passarg, config, operation);
+        result = getparameter(orig_opt, nextarg, &passarg, config, operation);
+        curlx_unicodefree(nextarg);
         if(result == PARAM_NEXT_OPERATION) {
           /* Reset result as PARAM_NEXT_OPERATION is only used here and not
              returned from this function */
@@ -2232,7 +2234,7 @@ ParameterError parse_args(struct GlobalConfig *config, int argc,
       bool used;
 
       /* Just add the URL please */
-      result = getparameter((char *)"--url", argv[i], &used, config,
+      result = getparameter("--url", orig_opt, &used, config,
                             operation);
     }
   }
@@ -2249,5 +2251,6 @@ ParameterError parse_args(struct GlobalConfig *config, int argc,
       helpf(config->errors, "%s\n", reason);
   }
 
+  curlx_unicodefree(orig_opt);
   return result;
 }

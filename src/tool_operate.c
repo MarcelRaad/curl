@@ -2025,6 +2025,7 @@ static CURLcode operate_do(struct GlobalConfig *global,
 CURLcode operate(struct GlobalConfig *config, int argc, argv_item_t argv[])
 {
   CURLcode result = CURLE_OK;
+  char *first_arg = curlx_convert_tchar_to_UTF8(argv[1]);
 
   /* Setup proper locale from environment */
 #ifdef HAVE_SETLOCALE
@@ -2033,8 +2034,8 @@ CURLcode operate(struct GlobalConfig *config, int argc, argv_item_t argv[])
 
   /* Parse .curlrc if necessary */
   if((argc == 1) ||
-     (!curl_strequal(argv[1], "-q") &&
-      !curl_strequal(argv[1], "--disable"))) {
+     (!curl_strequal(first_arg, "-q") &&
+      !curl_strequal(first_arg, "--disable"))) {
     parseconfig(NULL, config); /* ignore possible failure */
 
     /* If we had no arguments then make sure a url was specified in .curlrc */
@@ -2043,6 +2044,8 @@ CURLcode operate(struct GlobalConfig *config, int argc, argv_item_t argv[])
       result = CURLE_FAILED_INIT;
     }
   }
+
+  curlx_unicodefree(first_arg);
 
   if(!result) {
     /* Parse the command line arguments */
