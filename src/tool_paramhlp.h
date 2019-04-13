@@ -49,7 +49,7 @@ int ftpfilemethod(struct OperationConfig *config, const char *str);
 
 int ftpcccmethod(struct OperationConfig *config, const char *str);
 
-long delegation(struct OperationConfig *config, char *str);
+long delegation(struct OperationConfig *config, const char *str);
 
 ParameterError str2tls_max(long *val, const char *str);
 
