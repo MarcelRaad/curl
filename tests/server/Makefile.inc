@@ -5,14 +5,16 @@ CURLX_SRCS = \
  ../../lib/nonblock.c \
  ../../lib/strtoofft.c \
  ../../lib/warnless.c \
- ../../lib/curl_ctype.c
+ ../../lib/curl_ctype.c \
+ ../../lib/curl_multibyte.c
 
 CURLX_HDRS = \
  ../../lib/curlx.h \
  ../../lib/nonblock.h \
  ../../lib/strtoofft.h \
  ../../lib/warnless.h \
- ../../lib/curl_ctype.h
+ ../../lib/curl_ctype.h \
+ ../../lib/curl_multibyte.h
 
 USEFUL = \
  getpart.c \

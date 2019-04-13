@@ -53,6 +53,16 @@
   curlx_uztosi()
 */
 
+#include "curl_multibyte.h"
+/* "curl_multibyte.h" provies these functions and macros:
+
+  curlx_convert_UTF8_to_wchar()
+  curlx_convert_wchar_to_UTF8()
+  curlx_convert_UTF8_to_tchar()
+  curlx_convert_tchar_to_UTF8()
+  curlx_unicodefree()
+*/
+
 /* Now setup curlx_ * names for the functions that are to become curlx_ and
    be removed from a future libcurl official API:
    curlx_getenv
