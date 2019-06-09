@@ -32,7 +32,7 @@ matrix:
     include:
         - os: linux
           compiler: gcc
-          dist: trusty
+          dist: xenial
           env:
               - T=normal C="--with-gssapi --with-libssh2" CHECKSRC=1
               - OVERRIDE_CC="CC=gcc-8" OVERRIDE_CXX="CXX=g++-8"
@@ -46,7 +46,7 @@ matrix:
                       - libssh2-1-dev
         - os: linux
           compiler: gcc
-          dist: trusty
+          dist: xenial
           env:
               - T=normal C=--with-libssh
               - OVERRIDE_CC="CC=gcc-8" OVERRIDE_CXX="CXX=g++-8"
@@ -59,7 +59,7 @@ matrix:
                       - libssh-dev
         - os: linux
           compiler: gcc
-          dist: trusty
+          dist: xenial
           env:
               - T=normal C="--enable-ares"
               - OVERRIDE_CC="CC=gcc-8" OVERRIDE_CXX="CXX=g++-8"
@@ -241,7 +241,7 @@ matrix:
                       - libbrotli-dev
         - os: linux
           compiler: gcc
-          dist: trusty
+          dist: xenial
           env:
               - T=iconv
               - OVERRIDE_CC="CC=gcc-8" OVERRIDE_CXX="CXX=g++-8"
