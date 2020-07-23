@@ -23,6 +23,7 @@
 #include "curl_setup.h"
 
 #include <curl/curl.h>
+#include "curl_multibyte.h"
 #include "curl_memory.h"
 
 #include "memdebug.h"
@@ -35,16 +36,18 @@ static char *GetEnv(const char *variable)
 #elif defined(WIN32)
   /* This uses Windows API instead of C runtime getenv() to get the environment
      variable since some changes aren't always visible to the latter. #4774 */
-  char *buf = NULL;
-  char *tmp;
+  TCHAR *buf = NULL;
+  TCHAR *tmp;
   DWORD bufsize;
   DWORD rc = 1;
   const DWORD max = 32768; /* max env var size from MSCRT source */
+  TCHAR *tchar_envvar = curlx_convert_UTF8_to_tchar((char *)variable);
 
   for(;;) {
-    tmp = realloc(buf, rc);
+    tmp = realloc(buf, rc * sizeof(TCHAR));
     if(!tmp) {
       free(buf);
+      curlx_unicodefree(tchar_envvar);
       return NULL;
     }
 
@@ -53,15 +56,20 @@ static char *GetEnv(const char *variable)
 
     /* It's possible for rc to be 0 if the variable was found but empty.
        Since getenv doesn't make that distinction we ignore it as well. */
-    rc = GetEnvironmentVariableA(variable, buf, bufsize);
+    rc = GetEnvironmentVariable(tchar_envvar, buf, bufsize);
     if(!rc || rc == bufsize || rc > max) {
       free(buf);
+      curlx_unicodefree(tchar_envvar);
       return NULL;
     }
 
     /* if rc < bufsize then rc is bytes written not including null */
-    if(rc < bufsize)
-      return buf;
+    if(rc < bufsize) {
+      char *path = curlx_convert_tchar_to_UTF8(buf);
+      curlx_unicodefree(buf);
+      curlx_unicodefree(tchar_envvar);
+      return path;
+    }
 
     /* else rc is bytes needed, try again */
   }
