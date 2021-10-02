@@ -40,7 +40,7 @@
 
 #include <openssl/opensslv.h>
 
-#if (OPENSSL_VERSION_NUMBER >= 0x0090800fL)
+#if (OPENSSL_VERSION_NUMBER >= 0x0090700fL)
 #define USE_OPENSSL_SHA256
 #endif
 
@@ -70,7 +70,36 @@
 #if defined(USE_OPENSSL_SHA256)
 
 /* When OpenSSL is available we use the SHA256-function from OpenSSL */
-#include <openssl/sha.h>
+#include <openssl/evp.h>
+
+#include "curl_memory.h"
+
+/* The last #include file should be: */
+#include "memdebug.h"
+
+struct sha256_ctx {
+  EVP_MD_CTX *openssl_ctx;
+};
+typedef struct sha256_ctx Curl_SHA256_CTX;
+
+static void Curl_SHA256_Init(Curl_SHA256_CTX *ctx)
+{
+  ctx->openssl_ctx = EVP_MD_CTX_create();
+  EVP_DigestInit_ex(ctx->openssl_ctx, EVP_sha256(), NULL);
+}
+
+static void Curl_SHA256_Update(Curl_SHA256_CTX *ctx,
+                               const unsigned char *data,
+                               unsigned int length)
+{
+  EVP_DigestUpdate(ctx->openssl_ctx, data, length);
+}
+
+static void Curl_SHA256_Final(unsigned char *digest, Curl_SHA256_CTX *ctx)
+{
+  EVP_DigestFinal_ex(ctx->openssl_ctx, digest, NULL);
+  EVP_MD_CTX_destroy(ctx->openssl_ctx);
+}
 
 #elif defined(USE_GNUTLS)
 
@@ -81,21 +110,21 @@
 /* The last #include file should be: */
 #include "memdebug.h"
 
-typedef struct sha256_ctx SHA256_CTX;
+typedef struct sha256_ctx Curl_SHA256_CTX;
 
-static void SHA256_Init(SHA256_CTX *ctx)
+static void Curl_SHA256_Init(Curl_SHA256_CTX *ctx)
 {
   sha256_init(ctx);
 }
 
-static void SHA256_Update(SHA256_CTX *ctx,
+static void Curl_SHA256_Update(Curl_SHA256_CTX *ctx,
                           const unsigned char *data,
                           unsigned int length)
 {
   sha256_update(ctx, length, data);
 }
 
-static void SHA256_Final(unsigned char *digest, SHA256_CTX *ctx)
+static void Curl_SHA256_Final(unsigned char *digest, Curl_SHA256_CTX *ctx)
 {
   sha256_digest(ctx, SHA256_DIGEST_SIZE, digest);
 }
@@ -109,9 +138,9 @@ static void SHA256_Final(unsigned char *digest, SHA256_CTX *ctx)
 /* The last #include file should be: */
 #include "memdebug.h"
 
-typedef mbedtls_sha256_context SHA256_CTX;
+typedef mbedtls_sha256_context Curl_SHA256_CTX;
 
-static void SHA256_Init(SHA256_CTX *ctx)
+static void Curl_SHA256_Init(Curl_SHA256_CTX *ctx)
 {
 #if !defined(HAS_MBEDTLS_RESULT_CODE_BASED_FUNCTIONS)
   (void) mbedtls_sha256_starts(ctx, 0);
@@ -120,7 +149,7 @@ static void SHA256_Init(SHA256_CTX *ctx)
 #endif
 }
 
-static void SHA256_Update(SHA256_CTX *ctx,
+static void Curl_SHA256_Update(Curl_SHA256_CTX *ctx,
                           const unsigned char *data,
                           unsigned int length)
 {
@@ -131,7 +160,7 @@ static void SHA256_Update(SHA256_CTX *ctx,
 #endif
 }
 
-static void SHA256_Final(unsigned char *digest, SHA256_CTX *ctx)
+static void Curl_SHA256_Final(unsigned char *digest, Curl_SHA256_CTX *ctx)
 {
 #if !defined(HAS_MBEDTLS_RESULT_CODE_BASED_FUNCTIONS)
   (void) mbedtls_sha256_finish(ctx, digest);
@@ -152,21 +181,21 @@ static void SHA256_Final(unsigned char *digest, SHA256_CTX *ctx)
 /* The last #include file should be: */
 #include "memdebug.h"
 
-typedef CC_SHA256_CTX SHA256_CTX;
+typedef CC_SHA256_CTX Curl_SHA256_CTX;
 
-static void SHA256_Init(SHA256_CTX *ctx)
+static void Curl_SHA256_Init(Curl_SHA256_CTX *ctx)
 {
   (void) CC_SHA256_Init(ctx);
 }
 
-static void SHA256_Update(SHA256_CTX *ctx,
+static void Curl_SHA256_Update(Curl_SHA256_CTX *ctx,
                           const unsigned char *data,
                           unsigned int length)
 {
   (void) CC_SHA256_Update(ctx, data, length);
 }
 
-static void SHA256_Final(unsigned char *digest, SHA256_CTX *ctx)
+static void Curl_SHA256_Final(unsigned char *digest, Curl_SHA256_CTX *ctx)
 {
   (void) CC_SHA256_Final(digest, ctx);
 }
@@ -179,13 +208,13 @@ struct sha256_ctx {
   HCRYPTPROV hCryptProv;
   HCRYPTHASH hHash;
 };
-typedef struct sha256_ctx SHA256_CTX;
+typedef struct sha256_ctx Curl_SHA256_CTX;
 
 #if !defined(CALG_SHA_256)
 #define CALG_SHA_256 0x0000800c
 #endif
 
-static void SHA256_Init(SHA256_CTX *ctx)
+static void Curl_SHA256_Init(Curl_SHA256_CTX *ctx)
 {
   if(CryptAcquireContext(&ctx->hCryptProv, NULL, NULL, PROV_RSA_AES,
                          CRYPT_VERIFYCONTEXT | CRYPT_SILENT)) {
@@ -193,14 +222,14 @@ static void SHA256_Init(SHA256_CTX *ctx)
   }
 }
 
-static void SHA256_Update(SHA256_CTX *ctx,
+static void Curl_SHA256_Update(Curl_SHA256_CTX *ctx,
                           const unsigned char *data,
                           unsigned int length)
 {
   CryptHashData(ctx->hHash, (unsigned char *) data, length, 0);
 }
 
-static void SHA256_Final(unsigned char *digest, SHA256_CTX *ctx)
+static void Curl_SHA256_Final(unsigned char *digest, Curl_SHA256_CTX *ctx)
 {
   unsigned long length = 0;
 
@@ -269,7 +298,7 @@ struct sha256_state {
   unsigned long state[8], curlen;
   unsigned char buf[64];
 };
-typedef struct sha256_state SHA256_CTX;
+typedef struct sha256_state Curl_SHA256_CTX;
 
 /* The K array */
 static const unsigned long K[64] = {
@@ -346,7 +375,7 @@ static int sha256_compress(struct sha256_state *md,
 }
 
 /* Initialize the hash state */
-static void SHA256_Init(struct sha256_state *md)
+static void Curl_SHA256_Init(struct sha256_state *md)
 {
   md->curlen = 0;
   md->length = 0;
@@ -367,7 +396,7 @@ static void SHA256_Init(struct sha256_state *md)
    @param inlen  The length of the data (octets)
    @return CRYPT_OK if successful
 */
-static int SHA256_Update(struct sha256_state *md,
+static int Curl_SHA256_Update(struct sha256_state *md,
                          const unsigned char *in,
                          unsigned long inlen)
 {
@@ -408,7 +437,7 @@ static int SHA256_Update(struct sha256_state *md,
    @param out [out] The destination of the hash (32 bytes)
    @return CRYPT_OK if successful
 */
-static int SHA256_Final(unsigned char *out,
+static int Curl_SHA256_Final(unsigned char *out,
                         struct sha256_state *md)
 {
   int i;
@@ -466,24 +495,24 @@ static int SHA256_Final(unsigned char *out,
 void Curl_sha256it(unsigned char *output, const unsigned char *input,
                    const size_t length)
 {
-  SHA256_CTX ctx;
+  Curl_SHA256_CTX ctx;
 
-  SHA256_Init(&ctx);
-  SHA256_Update(&ctx, input, curlx_uztoui(length));
-  SHA256_Final(output, &ctx);
+  Curl_SHA256_Init(&ctx);
+  Curl_SHA256_Update(&ctx, input, curlx_uztoui(length));
+  Curl_SHA256_Final(output, &ctx);
 }
 
 
 const struct HMAC_params Curl_HMAC_SHA256[] = {
   {
     /* Hash initialization function. */
-    CURLX_FUNCTION_CAST(HMAC_hinit_func, SHA256_Init),
+    CURLX_FUNCTION_CAST(HMAC_hinit_func, Curl_SHA256_Init),
     /* Hash update function. */
-    CURLX_FUNCTION_CAST(HMAC_hupdate_func, SHA256_Update),
+    CURLX_FUNCTION_CAST(HMAC_hupdate_func, Curl_SHA256_Update),
     /* Hash computation end function. */
-    CURLX_FUNCTION_CAST(HMAC_hfinal_func, SHA256_Final),
+    CURLX_FUNCTION_CAST(HMAC_hfinal_func, Curl_SHA256_Final),
     /* Size of hash context structure. */
-    sizeof(SHA256_CTX),
+    sizeof(Curl_SHA256_CTX),
     /* Maximum key length. */
     64,
     /* Result size. */
